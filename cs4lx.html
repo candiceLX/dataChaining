@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+	    <style type="text/css">
+	    	body{overflow-x: hidden;} 
+    		ul li{list-style: none; width: 100%; height: auto; background:skyblue; margin-top: 20px; color:#fff ; font-size: 12px; padding:10px;}
+    		ul li h3{text-align: center; color: #010101;}
+    		ul li span{color:brown;}
+    		p{ text-align: center; cursor: pointer;}
+	    </style>
+	    <title>滚动加载初次展示十条 之后每次加载为5条 拿的是可跨域的数据</title>
+	</head>
+	<body>
+		<ul>
+		</ul>
+        <p class="join">加载中。。。</p>
+        <template>
+			<li>
+				<h3>{{title}}</h3>
+				<span>{{time}}</span> <span>id:{{id}}</span>
+				<p>{{content}}</p>
+			</li>
+        </template>
+        
+<script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+<script>
+	var page=0
+	var over=true
+	var timer=null
+	
+function getDate(){
+		$.getJSON(  "http://blog.wo2.me/cs.php",  {page: page,number:"10"},  function(data){
+			$.each(data,function(index,val){
+				var list=template(
+					$('template')[0],{
+						title:val.post_title,
+						time:val.post_date_gmt,
+						id:val.ID,
+						content:val.post_content
+					}
+				)
+				$('ul').append(list)
+				page=1
+			})
+		});
+		
+	}
+	getDate()	//先给页面10条数据
+
+$(window).scroll(function(){
+	var DH=$(document).height()-$(window).height()-50
+	var SH=$(window).scrollTop()
+	clearTimeout(timer)
+	
+	if(SH>=DH){
+		timer=setTimeout(function(){
+			if(over === true && page != -1){
+				page++
+				getDeta2()
+			}
+		},200)	
+	}
+})
+
+function getDeta2(){
+	over=false
+	$.getJSON( "http://blog.wo2.me/cs.php",{page: page,number:"5"},function(data){
+		//这是foreach方法 效果是一样的
+		data.forEach(function(e,i){
+			var list2=template(
+				$('template')[0],{
+					title:e.post_title,
+					time:e.post_date_gmt,
+					id:e.ID,
+					content:e.post_content
+				}
+			)
+			$('ul').append(list2)
+		})	
+			
+			over=true				 
+			if(!data.length){
+				page=-1
+				$('.join').text('没有数据了')
+			}
+					
+	})	
+}
+	
+	
+/*模板渲染*/	
+function template(tag,data){
+	var content=''
+	if(data instanceof Array){
+		for(var i=0;i<data.length;i++){
+			content+=template(tag.innerHTML,data[i])
+		}
+	}else{
+		var t=tag.innerHTML
+		for(var attr in data){
+			var value=data[attr]
+			t=t.replace(new RegExp("{{"+attr+"}}","igm"),value)
+		}
+		content+=t
+	}
+	return content
+}	
+</script>
+   	
+    
+	</body>
+</html>
